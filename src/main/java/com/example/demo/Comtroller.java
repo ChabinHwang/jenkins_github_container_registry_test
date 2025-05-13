@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class Comtroller {
-
+//test123
     @GetMapping("/")
     public String index(Model model) {
         return "index";

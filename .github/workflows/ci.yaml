@@ -1,4 +1,4 @@
-name: CI - Build and Push Docker Image
+name: CI/CD - Build, Push, and Update Manifests
 
 on:
   push:
@@ -34,3 +34,25 @@ jobs:
 
       - name: Test with Gradle
         run: ./gradlew test
+
+      # ArgoCD와의 통합을 위한 매니페스트 업데이트 단계
+      - name: Checkout k8s manifests repository
+        uses: actions/checkout@v3
+        with:
+          repository: chabinhwang/k8s-manifest-repo-test
+          token: ${{ secrets.MANIFEST_REPO_PAT }}
+          path: k8s-manifests
+
+      - name: Update image tag in values.yaml
+        run: |
+          cd k8s-manifests/my-app-manifests-repo/my-app-chart
+          sed -i "s|tag: .*|tag: ${{ github.sha }}|" values.yaml
+
+      - name: Commit and push changes to manifest repo
+        run: |
+          cd k8s-manifests
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add my-app-manifests-repo/my-app-chart/values.yaml
+          git commit -m "Update image tag to ${{ github.sha }}"
+          git push 

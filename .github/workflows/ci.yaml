@@ -10,12 +10,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. 소스 코드 체크아웃
       - name: Checkout source code
         uses: actions/checkout@v3
 
+      # 2. Gradle 테스트 실행 (빌드 전에)
+      - name: Test with Gradle
+        run: ./gradlew test
+
+      # 3. Docker Buildx 설정
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # 4. GitHub Container Registry 로그인
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -23,6 +30,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
+      # 5. 컨테이너 이미지 빌드 및 푸시
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -32,10 +40,7 @@ jobs:
             ghcr.io/chabinhwang/my-app:latest
             ghcr.io/chabinhwang/my-app:${{ github.sha }}
 
-      - name: Test with Gradle
-        run: ./gradlew test
-
-      # ArgoCD와의 통합을 위한 매니페스트 업데이트 단계
+      # 6. ArgoCD 매니페스트 업데이트 (이미지 태그 변경)
       - name: Checkout k8s manifests repository
         uses: actions/checkout@v3
         with:
@@ -55,4 +60,4 @@ jobs:
           git config user.email "actions@github.com"
           git add my-app-manifests-repo/my-app-chart/values.yaml
           git commit -m "Update image tag to ${{ github.sha }}"
-          git push 
+          git push
